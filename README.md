@@ -16,17 +16,26 @@ run the "setup"
    > python setup.ph install
 
 # Test application
-* AuditWrite.py
-** create a Patient
-** create an Observation
-** Read the Observation
-** Update the Observation
-** Read the Observation
-** Delete the Observation
-** Pause to allow audits to be created lazy
-** Read all auditEvent for 
+## AuditWrite.py
+* create a Patient
+* create an Observation
+* Read the Observation
+* Update the Observation
+* Read the Observation
+* Delete the Observation
+* Pause to allow audits to be created lazy
+* Read all auditEvent for 
 
 # Results
-1. Grahame's server works (Note needed to update his auditEvent to record .entity with Patient)
-2. Pyro server works (Got them to fix their div on their auto created audit logs)
-3. Fire.ly server does NOT auto create audit logs
+## Grahame's server 
+works now
+Initially auditEvent did not have .entity with Patient identified. This inspired GF#23835
+https://chat.fhir.org/#narrow/stream/179247-Security-and.20Privacy
+## Pyro server 
+works now
+Initially the AuditEvent were not valid with problems with the .text div
+## Fire.ly Vonk server 
+does NOT auto create audit logs
+## HAPI server
+does not auto create audit logs
+https://chat.fhir.org/#narrow/stream/179167-hapi/topic/automatic.20Audit.20logs
