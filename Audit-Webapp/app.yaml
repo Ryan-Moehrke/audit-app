@@ -1,0 +1,18 @@
+runtime: python37
+
+env_variables:
+  BUCKET_NAME: "fhir-audit-app.appspot.com"
+
+handlers:
+# Matches requests to /images/... to files in static/images/...
+- url: /images
+  static_dir: static/images
+
+
+- url: /
+  static_files: index.html
+  upload: index.html
+- url: /.*
+  secure: always
+  redirect_http_response_code: 301
+  script: auto
