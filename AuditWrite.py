@@ -73,8 +73,8 @@ def ObservationCreate(client, patID):
     jsondict = {
   "resourceType": "Observation",
   "text": {
-    "status": "generated"#,
- #   "div": "<div>Ryan Audit Test</div>"
+    "status": "generated",
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Ryan</div>"
     },
   "identifier": [
     {
@@ -193,7 +193,21 @@ smart_defaults = {
     #'api_base':'http://test.fhir.org/r4',
     #'api_base':'http://hapi.fhir.org/baseDstu3'
     #'api_base':'http://hapi.fhir.org/baseR4'
-    'api_base':'https://r4.test.pyrohealth.net/fhir'
+    #'api_base':'https://r4.test.pyrohealth.net/fhir'
+    
+    #'api_base':'http://wildfhir4.aegis.net/fhir4-0-0', #worked but no audits
+    #'api_base':'http://sqlonfhir-r4.azurewebsites.net/fhir', #stalled but worked/validation error
+    #'api_base':'https://vhdir-demo.fhir.org/fhir' #404'd
+    #'api_base':'http://www.pknapp.com:8081/con19' #400'd bad url
+    #'api_base':'http://fhir.ext.apelon.com:7080/dts/fhir/' #401'd unauth
+    #'api_base':'http://sandbox.hspconsortium.org' #couldn't build pat json?
+    #'api_base':'http://fhir.tukan.online/' #404'd
+    #'api_base':'https://terminz.azurewebsites.net/fhir' #500'd try again later?
+    #'api_base':'https://fhir-open.stagingcerner.com/r4/0b8a0111-e8e6-4c26-a91c-5069cbc6b1ca/' #404'd
+    #'api_base':'http://r4.heliossoftware.com:8080' #"No connection could be made because the target machine actively refused it'))"
+    #'api_base':'http://sandbox.bluebutton.cms.gov' #404'd
+    #'api_base':'http://elsevier.demo.elsevierfhir.com/fhir/metadata' #404;d
+    
     #'api_base':'https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4',
     #'patient_id':'1254099010',
     #'launch_token':'eyJhbGciIDogIlJTMjU2Iiwia2lkIiA6ICJodHRwczovL3Rlc3QuZmhpci5vcmcvcjQvYXV0aC9hdXRoX2tleSIsInR5cCIgOiAiSldUIn0.eyJleHAiIDogMTU2NzA1MDM3MCwiaWF0IiA6ICIxNTY3MDQ2OTI1IiwiaXNzIiA6ICJ0ZXN0LmZoaXIub3JnIiwianRpIiA6ICJ0ZXN0LmZoaXIub3JnL3Nlc3Npb25zLzUzMTA4In0.k4veGpcBqDBLZIU77nsuUi1YLaQGhV59_k9KKEHL0jxRRCJSFOSAMlghuIlQAMOqEwT1O-jy97vkg896P8U1sObnMLxtmhmveWC9uTA0tBv9f9tUt2D7xWFc6QtF2Rh15q1luNnK_Xi4g_HBmZjmfcDV0VquEjaawj661AKjIwMOwRnxx-x_Qd6vPaM-VHXPYMVbo3xB5aRKUs3gKdnwCiOsf7znomnYZXtAA7hDdOd5xQGDu-rGq-6jfdsCVOuZJ21sqhz97ifBvubxNGF7Wsdr7SzJLoglESUCt6SKQhflwT746O_j5c1yJRnS7maFEtDQc0YLfBGqar7om5etSQ'
