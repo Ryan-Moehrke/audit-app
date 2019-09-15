@@ -193,6 +193,7 @@ smart_defaults = {
     #'api_base':'http://test.fhir.org/r4',
     #'api_base':'http://hapi.fhir.org/baseDstu3'
     #'api_base':'http://hapi.fhir.org/baseR4'
+    'api_base':'https://r4.test.pyrohealth.net/fhir'
     #'api_base':'https://r4.test.pyrohealth.net/fhir'
     
     #'api_base':'http://wildfhir4.aegis.net/fhir4-0-0', #worked but no audits
@@ -212,7 +213,15 @@ smart_defaults = {
     #'patient_id':'1254099010',
     #'launch_token':'eyJhbGciIDogIlJTMjU2Iiwia2lkIiA6ICJodHRwczovL3Rlc3QuZmhpci5vcmcvcjQvYXV0aC9hdXRoX2tleSIsInR5cCIgOiAiSldUIn0.eyJleHAiIDogMTU2NzA1MDM3MCwiaWF0IiA6ICIxNTY3MDQ2OTI1IiwiaXNzIiA6ICJ0ZXN0LmZoaXIub3JnIiwianRpIiA6ICJ0ZXN0LmZoaXIub3JnL3Nlc3Npb25zLzUzMTA4In0.k4veGpcBqDBLZIU77nsuUi1YLaQGhV59_k9KKEHL0jxRRCJSFOSAMlghuIlQAMOqEwT1O-jy97vkg896P8U1sObnMLxtmhmveWC9uTA0tBv9f9tUt2D7xWFc6QtF2Rh15q1luNnK_Xi4g_HBmZjmfcDV0VquEjaawj661AKjIwMOwRnxx-x_Qd6vPaM-VHXPYMVbo3xB5aRKUs3gKdnwCiOsf7znomnYZXtAA7hDdOd5xQGDu-rGq-6jfdsCVOuZJ21sqhz97ifBvubxNGF7Wsdr7SzJLoglESUCt6SKQhflwT746O_j5c1yJRnS7maFEtDQc0YLfBGqar7om5etSQ'
 }
+print("settings: ")
+print(smart_defaults)
+print("\n")
+
 client = client.FHIRClient(settings=smart_defaults)
+print("client: ")
+print (client)
+print ("\n")
+
 ##client.wants_patient = False
 ##print(client.authorize_url)
 ##client.handle_callback()
