@@ -5,29 +5,76 @@ import fhirclient.models.patient as P
 import fhirclient.models.auditevent as AE
 import fhirclient.models.fhirsearch as S
 from fhirclient.models.fhirabstractbase import FHIRValidationError
+import fhirclient.server as FHIRServer
 from requests.exceptions import HTTPError
 
 
 def PatientSearch(struct=None):
-    servers = [
-        'http://test.fhir.org/r4',
-        'http://hapi.fhir.org/baseR4',
-        'https://r4.test.pyrohealth.net/fhir'
-        ]
-    patient = {}
+    servers = getListBucket("servers.txt")
+##    'http://test.fhir.org/r4',
+##    'https://r4.test.pyrohealth.net/fhir',
+##    'http://hapi.fhir.org/baseR4',
+##    
+##    'http://wildfhir4.aegis.net/fhir4-0-0',
+##    'http://www.pknapp.com:8081/con19',
+##    'http://fhir.tukan.online/',
+##    'http://sandbox.bluebutton.cms.gov',
+##    'http://elsevier.demo.elsevierfhir.com/fhir/metadata',
+##
+##        #below have val errors but type:AuditEvent in their capability statements
+##
+##    'https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4', 
+##    'http://sqlonfhir-r4.azurewebsites.net/fhir', 
+##    'https://vhdir-demo.fhir.org/fhir', 
+##        ]
+    returnJson = {}
     for server in servers:
+        returnJson[server] = {}
         try:
             smart = client.FHIRClient(settings={'app_id':'audit_app','api_base':server})
-            search = S.FHIRSearch(P.Patient, struct)
-            patList = search.perform_resources(smart.server)
-            #I acknowledge that if the search comes back with more than one bundle of patients this won't catch them all, but I hope that never happens
-            for pat in patList:
-                patient[pat.id] = server
+            if True:#CheckServer(smart):
+                
+                search = S.FHIRSearch(P.Patient, struct)
+                patList = search.perform_resources(smart.server)
+                #I acknowledge that if the search comes back with more than one bundle of patients this won't catch them all, but I hope that never happens
+                for pat in patList:
+                    returnJson[server][pat.id] = {}
+            else:
+                returnJson[server] = "Does not implement AuditEvents"
         except HTTPError as e:
-            patient[e.response.status_code] = server
-    return patient  #dict format of {"patID":"fhirserver.org"}
-                    #will have duplicate server values for multiple patients per server
-                    #if http errors the entry will be {404 error_code:"fhirserver.org"}
+            returnJson[server]["http error"] = e.response.status_code
+        except FHIRValidationError as e:
+            returnJson[server]["Validation error"] = e.errors
+        except FHIRServer.FHIRUnauthorizedException as e:
+            returnJson[server]["http error"] = e.response.status_code
+        except FHIRServer.FHIRPermissionDeniedException:
+            returnJson[server]["http error"] = e.response.status_code
+        except FHIRServer.FHIRNotFoundException:
+            returnJson[server]["http error"] = e.response.status_code
+        
+    return returnJson   #dict form of {server:{patient:{}}}
+                        #where the extra dict inside of patient will be filled later
+                        #in the event of an error, the error message will replace patient
+
+def CheckServer(smart):
+    CS = smart.server.capabilityStatement
+    for fmt in CS.format:
+        if fmt.endswith("json"):
+            
+            for rst in CS.rest:
+                if rst.mode == "server":
+                
+                    for res in rst.resource:
+                        if res.type == "AuditEvent":
+                            return True
+
+                                    
+##                            if rst.security.service:
+##                                print(rst.security.service)
+##                                for srv in rst.security.service:
+##                                    if srv:
+##                                        print(srv.description) #and stop srv
+    return False
 
 def AuditSearch(pat, server):
     smart = client.FHIRClient(settings={'app_id':'audit_app','api_base':server})
@@ -35,15 +82,35 @@ def AuditSearch(pat, server):
     bundle = search.perform(smart.server)
     return bundle
 
-def SumAuditType(server, bundle):
+def SumAuditType(server, bundle): #include rest summary
     key = {}
     smart = client.FHIRClient(settings={'app_id':'audit_app','api_base':server})
     while bundle is not None and bundle.entry:
         for entry in bundle.entry:
-            if entry.resource.type.code in key:
-                key[entry.resource.type.code] += 1
-            else:
-                key[entry.resource.type.code] = 1
+            if not audit.type.code == "rest":
+                if entry.resource.type.code in key:
+                    key[entry.resource.type.code] += 1
+                else:
+                    key[entry.resource.type.code] = 1
+            else:    
+                if not audit.subtype:
+                    try:
+                        key["rest"]['null'] += 1
+                    except KeyError:
+                        key["rest"]['null'] = 1
+                else:
+                    for subtype in audit.subtype:
+                        if not subtype.code:
+                            try:
+                                key["rest"]['null'] += 1
+                            except KeyError:
+                                key["rest"]['null'] = 1
+                        else:
+                            try:
+                                key["rest"][subtype.code] += 1
+                            except KeyError:
+                                key["rest"][subtype.code] = 1
+
         bundle = NextBundle(smart, bundle)
     return key
 
@@ -66,13 +133,13 @@ def SendErrorMail(person):
     import smtplib
     from email.message import EmailMessage
     msg = EmailMessage()
-    msg.set_content("""Dear {Name},
-No Patient found with name: {Name}
-""".format(Name=person["Name"]))
-
+    msg.set_content("""Dear {Given} {Family},
+No Patient found with name: {Given} {Family}
+""".format(Given=person["Given"],Family=person["Family"]))
     msg['Subject'] = "Patient Not Found"
-    msg['To'] = "{} <{}>".format(person["Name"], person["Email"])
-
+    msg['To']="{Given} {Family} <{Email}>".format(Given=person["Given"],
+                                                  Family=person["Family"],
+                                                  Email=person["Email"])
     return sendSMTP(msg)
 
 
@@ -81,15 +148,18 @@ def SendSummaryMail(person, sumJson):
     import smtplib
     from email.message import EmailMessage
     msg = EmailMessage()
-    msg.set_content("""Dear {Name},
+    msg.set_content("""Dear {Given} {Family},
 {pat} patients found with audits
 {summary}
 Thanks,
-Management""".format(Name=person["Name"],
+Management""".format(Given=person["Given"],
+                     Family=person["Family"],
                      pat=len(sumJson),
                      summary=pformat(sumJson)
         ))
-    msg['To']="{} <{}>".format(person["Name"], person["Email"])
+    msg['To']="{Given} {Family} <{Email}>".format(Given=person["Given"],
+                                                  Family=person["Family"],
+                                                  Email=person["Email"])
     msg['Subject']="Audits Found"
 
     return sendSMTP(msg)
@@ -124,19 +194,30 @@ def getJsonBucket(path):
     jstring = blob.download_as_string()
     return json.loads(jstring)
 
+def getListBucket(path):
+    bucket_name = "fhir-audit-app.appspot.com"
+    entries = []
+    blob = storage.Client().get_bucket(bucket_name).blob(path)
+
+    lines = blob.download_as_string().decode()
+    entries.extend(lines.split(','))
+    return entries
+
 def app():
     Mailing = getJsonBucket("email.json")
     
 ##    Mailing = [
-##        {'Name':'Everywoman',
+##        {'"Given":"Every",
+##         "Family":"Woman",
 ##         "Email":"Everywoman@gmail.com"},
-##        {"Name":"Everyman",
+##        {'"Given":"Every",
+##         "Family":"Man",
 ##         "Email":"Everyman@gmail.com"}
 ##        ]
 
     for person in Mailing:
         sumJson = {}
-        patient = PatientSearch({'name':person["Name"]})
+        patient = PatientSearch({'given':person["Given"],'family':person["Family"]})
         if len(patient) == 0:
             SendErrorMail(person)
         else:
@@ -156,4 +237,29 @@ def app():
                     except HTTPError as e:
                         sumJson[pat] = "Http Error: {}".format(e.response.status_code)
             SendSummaryMail(person,sumJson)
-    return 'Sent an email to {}.'.format(person["Name"])
+    return 'Sent an email to {} {}.'.format(person["Given"],person["Family"])
+def sendSingleMail(person):
+##    person = {'"Given":"Every",
+##              "Family":"Woman",
+##              "Email":"Everywoman@gmail.com"}
+    returnJson = PatientSearch({'given':person["Given"],'family':person["Family"]})
+    if len(patient) == 0:
+        SendErrorMail(person)
+    else:
+        for server, pats in returnJson.items():
+            if not server.endswith("error"):
+                for pat, audits in pats.items():
+                    try:
+                        AuditBundle = AuditSearch(pat, server)
+                        if AuditBundle.entry:
+                            returnJson[server][pat] = SumAuditType(server, AuditBundle)
+                        else:
+                            returnJson[server][pat] = "No Audits Found"
+                        
+                    except FHIRValidationError as e:
+                        returnJson[server][pat]["Validation Error"] = e.errors
+                    except HTTPError as e:
+                        returnJson[server][pat]["Http Error"] = e.response.status_code
+        SendSummaryMail(person,returnJson)
+    return 'Sent an email to {} {}.'.format(person["Given"],person["Family"])
+

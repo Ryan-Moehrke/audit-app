@@ -1,4 +1,6 @@
 Flask==1.1.1
+flask-oidc==1.4.0
+google-api-python-client==1.7.11
 google-api-core==1.14.2
 google-auth==1.6.3
 google-cloud-core==1.0.3
