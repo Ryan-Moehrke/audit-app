@@ -32,7 +32,7 @@ def PatientSearch(struct=None):
         returnJson[server] = {}
         try:
             smart = client.FHIRClient(settings={'app_id':'audit_app','api_base':server})
-            if True:#CheckServer(smart):
+            if CheckServer(smart):
                 
                 search = S.FHIRSearch(P.Patient, struct)
                 patList = search.perform_resources(smart.server)
@@ -42,15 +42,15 @@ def PatientSearch(struct=None):
             else:
                 returnJson[server] = "Does not implement AuditEvents"
         except HTTPError as e:
-            returnJson[server]["http error"] = e.response.status_code
+            returnJson[server]["http error"] = str(e.response.status_code)
         except FHIRValidationError as e:
             returnJson[server]["Validation error"] = e.errors
-        except FHIRServer.FHIRUnauthorizedException as e:
-            returnJson[server]["http error"] = e.response.status_code
-        except FHIRServer.FHIRPermissionDeniedException:
-            returnJson[server]["http error"] = e.response.status_code
-        except FHIRServer.FHIRNotFoundException:
-            returnJson[server]["http error"] = e.response.status_code
+##        except FHIRServer.FHIRUnauthorizedException as e:
+##            returnJson[server]["http error"] = e.response.status_code
+##        except FHIRServer.FHIRPermissionDeniedException:
+##            returnJson[server]["http error"] = e.response.status_code
+##        except FHIRServer.FHIRNotFoundException:
+##            returnJson[server]["http error"] = str(e.response.status_code)
         
     return returnJson   #dict form of {server:{patient:{}}}
                         #where the extra dict inside of patient will be filled later
@@ -87,19 +87,21 @@ def SumAuditType(server, bundle): #include rest summary
     smart = client.FHIRClient(settings={'app_id':'audit_app','api_base':server})
     while bundle is not None and bundle.entry:
         for entry in bundle.entry:
-            if not audit.type.code == "rest":
+            if not entry.resource.type.code == "rest":
                 if entry.resource.type.code in key:
                     key[entry.resource.type.code] += 1
                 else:
                     key[entry.resource.type.code] = 1
-            else:    
-                if not audit.subtype:
+            else:
+                if not "rest" in key:
+                    key["rest"] = {}
+                if not entry.resource.subtype:
                     try:
                         key["rest"]['null'] += 1
                     except KeyError:
                         key["rest"]['null'] = 1
                 else:
-                    for subtype in audit.subtype:
+                    for subtype in entry.resource.subtype:
                         if not subtype.code:
                             try:
                                 key["rest"]['null'] += 1
@@ -149,12 +151,10 @@ def SendSummaryMail(person, sumJson):
     from email.message import EmailMessage
     msg = EmailMessage()
     msg.set_content("""Dear {Given} {Family},
-{pat} patients found with audits
 {summary}
 Thanks,
 Management""".format(Given=person["Given"],
                      Family=person["Family"],
-                     pat=len(sumJson),
                      summary=pformat(sumJson)
         ))
     msg['To']="{Given} {Family} <{Email}>".format(Given=person["Given"],
@@ -200,7 +200,7 @@ def getListBucket(path):
     blob = storage.Client().get_bucket(bucket_name).blob(path)
 
     lines = blob.download_as_string().decode()
-    entries.extend(lines.split(','))
+    entries = lines.splitlines()
     return entries
 
 def app():
@@ -238,17 +238,20 @@ def app():
                         sumJson[pat] = "Http Error: {}".format(e.response.status_code)
             SendSummaryMail(person,sumJson)
     return 'Sent an email to {} {}.'.format(person["Given"],person["Family"])
-def sendSingleMail(person):
+def sendSingleMail(person, debug=False):
 ##    person = {'"Given":"Every",
 ##              "Family":"Woman",
 ##              "Email":"Everywoman@gmail.com"}
     returnJson = PatientSearch({'given':person["Given"],'family':person["Family"]})
-    if len(patient) == 0:
-        SendErrorMail(person)
+    if len(returnJson) == 0:
+        SendErrorMail(returnJson)
     else:
         for server, pats in returnJson.items():
-            if not server.endswith("error"):
-                for pat, audits in pats.items():
+            for pat, audits in pats.items():
+                if pat.endswith("error"):
+                    if not debug:
+                        pats.pop(pat)
+                else:
                     try:
                         AuditBundle = AuditSearch(pat, server)
                         if AuditBundle.entry:
@@ -259,7 +262,7 @@ def sendSingleMail(person):
                     except FHIRValidationError as e:
                         returnJson[server][pat]["Validation Error"] = e.errors
                     except HTTPError as e:
-                        returnJson[server][pat]["Http Error"] = e.response.status_code
+                        returnJson[server][pat]["Http Error"] = str(e.response.status_code)
         SendSummaryMail(person,returnJson)
     return 'Sent an email to {} {}.'.format(person["Given"],person["Family"])
 

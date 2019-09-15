@@ -1,7 +1,8 @@
 from flask import Flask, g, request, render_template
 
 app = Flask(__name__)
-homeButton = "<form action='/'><button type='submit'>Home</button>"
+def homeButton(text):
+    return "<p>{}</p><form action='/'><button type='submit'>Home</button>".format(text)
 
 @app.route('/')
 def index():
@@ -12,12 +13,12 @@ def send_mail():
     import send_mail
     person = request.form
     if not person["Email"]:
-        return "An Email Address Is Required"
-    elif not person["Given"] or not person["Family"]:
-        return "A Patient Name Is Required To Search"
+        return homeButton("An Email Address Is Required")
+    elif not person["Given"] and not person["Family"]:
+        return homeButton("A Patient Name Is Required To Search")
     else:
-        send_mail.sendSingleMail(person)
-        return homeButton
+        text = send_mail.sendSingleMail(person, True)
+        return homeButton(text)
 
 @app.route('/user/signup')
 def user_signup():
