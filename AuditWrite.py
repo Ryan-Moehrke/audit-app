@@ -197,12 +197,12 @@ smart_defaults = {
     
     #'api_base':'http://wildfhir4.aegis.net/fhir4-0-0', #worked but no audits
     #'api_base':'http://sqlonfhir-r4.azurewebsites.net/fhir', #stalled but worked/validation error
-    #'api_base':'https://vhdir-demo.fhir.org/fhir' #404'd
+    #'api_base':'https://vhdir-demo.fhir.org/fhir' #404'd on create, not on read?
     #'api_base':'http://www.pknapp.com:8081/con19' #400'd bad url
     #'api_base':'http://fhir.ext.apelon.com:7080/dts/fhir/' #401'd unauth
     #'api_base':'http://sandbox.hspconsortium.org' #couldn't build pat json?
     #'api_base':'http://fhir.tukan.online/' #404'd
-    #'api_base':'https://terminz.azurewebsites.net/fhir' #500'd try again later?
+    'api_base':'https://terminz.azurewebsites.net/fhir' #500'd try again later? /AuditEvent url 400'd
     #'api_base':'https://fhir-open.stagingcerner.com/r4/0b8a0111-e8e6-4c26-a91c-5069cbc6b1ca/' #404'd
     #'api_base':'http://r4.heliossoftware.com:8080' #"No connection could be made because the target machine actively refused it'))"
     #'api_base':'http://sandbox.bluebutton.cms.gov' #404'd
